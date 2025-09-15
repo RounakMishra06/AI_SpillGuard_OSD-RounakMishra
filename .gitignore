@@ -1,0 +1,37 @@
+# Model checkpoints and large files
+models/
+*.pth
+*.pkl
+*.h5
+*.weights
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Environment files
+.env
+.venv
+env/
+venv/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Data files (if large)
+data/train/
+data/val/
+data/test/
+*.zip
+*.tar.gz
