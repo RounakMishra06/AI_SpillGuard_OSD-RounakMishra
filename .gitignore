@@ -1,23 +1,18 @@
-# Model checkpoints and large files
-models/
-*.pth
-*.pkl
-*.h5
-*.weights
-
 # Python cache
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
 
 # Environment files
 .env
-.venv
+.venv/
 env/
 venv/
+ENV/
 
 # IDE files
 .vscode/
@@ -28,10 +23,20 @@ venv/
 # OS files
 .DS_Store
 Thumbs.db
+*.log
 
-# Data files (if large)
-data/train/
-data/val/
-data/test/
+# Temporary files
+*.tmp
+*.temp
+
+# Large compressed files
 *.zip
 *.tar.gz
+
+# Large model files (too big for GitHub)
+models/*.pth
+models/*.pkl
+
+# Keep other model files
+!models/training_curves.png
+!models/.gitkeep

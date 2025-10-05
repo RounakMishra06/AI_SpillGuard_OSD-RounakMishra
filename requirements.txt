@@ -7,3 +7,7 @@ numpy
 matplotlib
 scikit-image
 tqdm
+streamlit
+plotly
+Pillow
+pandas
