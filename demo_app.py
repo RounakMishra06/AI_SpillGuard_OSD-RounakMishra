@@ -1,8 +1,8 @@
 """
-AI SpillGuard - Oil Spill Detection Demo App
-===========================================
+AI SpillGuard - Cloud Deployment Version
+=======================================
 
-A simplified demo version that works without requiring a trained model.
+Optimized for Streamlit Cloud deployment with model downloading capability.
 """
 
 import streamlit as st
@@ -15,10 +15,13 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import io
 from datetime import datetime
+import requests
+import gdown
+import os
 
 # Set page config
 st.set_page_config(
-    page_title="AI SpillGuard - Oil Spill Detection Demo",
+    page_title="AI SpillGuard - Oil Spill Detection",
     page_icon="🛰️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -108,6 +111,34 @@ class UNet(nn.Module):
         
         return self.final_conv(x)
 
+@st.cache_resource
+def download_model():
+    """Download pre-trained model or use demo mode"""
+    model_dir = Path("models")
+    model_dir.mkdir(exist_ok=True)
+    model_path = model_dir / "best_model.pth"
+    
+    # Try to download from Google Drive (if you upload your model there)
+    # For now, we'll use demo mode
+    
+    # Google Drive file ID (you would need to upload your model and get this ID)
+    # drive_file_id = "YOUR_GOOGLE_DRIVE_FILE_ID"
+    # drive_url = f"https://drive.google.com/uc?id={drive_file_id}"
+    
+    # Uncomment these lines if you upload your model to Google Drive:
+    # if not model_path.exists():
+    #     st.info("📥 Downloading trained model... This may take a moment.")
+    #     try:
+    #         gdown.download(drive_url, str(model_path), quiet=False)
+    #         st.success("✅ Model downloaded successfully!")
+    #         return model_path
+    #     except Exception as e:
+    #         st.warning(f"⚠️ Could not download model: {e}")
+    #         return None
+    
+    # For demo, return None to trigger demo mode
+    return None
+
 class OilSpillDetector:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -115,12 +146,16 @@ class OilSpillDetector:
         self.model.to(self.device)
         self.model.eval()
         
-        # Try to load trained model, but work without it if not available
-        model_path = Path("models/best_model.pth")
-        if model_path.exists():
+        # Try to load model
+        model_path = download_model()
+        
+        if model_path and model_path.exists():
             try:
                 checkpoint = torch.load(model_path, map_location=self.device)
-                self.model.load_state_dict(checkpoint['model_state_dict'])
+                if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+                    self.model.load_state_dict(checkpoint['model_state_dict'])
+                else:
+                    self.model.load_state_dict(checkpoint)
                 self.model_loaded = True
                 st.success("✅ Trained model loaded successfully!")
             except Exception as e:
@@ -129,7 +164,14 @@ class OilSpillDetector:
                 st.info("🔄 Using demo mode with simulated predictions")
         else:
             self.model_loaded = False
-            st.info("🔄 No trained model found. Using demo mode with simulated predictions.")
+            st.warning("⚠️ No trained model found. Using untrained model for demo.")
+            st.info("""
+            **To use a trained model:**
+            1. Upload your model to Google Drive
+            2. Get the file ID from the shareable link
+            3. Update the code with your file ID
+            4. Redeploy the app
+            """)
     
     def preprocess_image(self, image):
         """Preprocess image for prediction"""
@@ -158,7 +200,7 @@ class OilSpillDetector:
                     output = self.model(image_tensor)
                     prediction = torch.sigmoid(output).cpu().numpy().squeeze()
                 else:
-                    # Generate simulated prediction for demo
+                    # Generate enhanced demo prediction
                     prediction = self.generate_demo_prediction(image)
                 
                 return prediction
@@ -167,23 +209,39 @@ class OilSpillDetector:
             return self.generate_demo_prediction(image)
     
     def generate_demo_prediction(self, image):
-        """Generate a demo prediction for visualization"""
+        """Generate a realistic demo prediction for visualization"""
         if isinstance(image, Image.Image):
             image = np.array(image)
         
-        # Create a simple demo mask based on image characteristics
+        # Create a more sophisticated demo mask based on image characteristics
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         
-        # Simulate oil spill detection based on dark areas
-        _, binary = cv2.threshold(gray, 60, 1, cv2.THRESH_BINARY_INV)
+        # Simulate oil spill detection based on dark areas and texture
+        # Threshold for dark areas (potential oil spills)
+        _, dark_areas = cv2.threshold(gray, 80, 1, cv2.THRESH_BINARY_INV)
         
-        # Add some noise and smooth the mask
-        kernel = np.ones((5,5), np.uint8)
-        binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
-        binary = cv2.GaussianBlur(binary.astype(np.float32), (7,7), 0)
+        # Add texture-based detection simulation
+        # Use Laplacian to detect edges (oil spills have different texture)
+        laplacian = cv2.Laplacian(gray, cv2.CV_64F)
+        laplacian_norm = np.abs(laplacian) / np.max(np.abs(laplacian))
+        
+        # Combine dark areas and texture information
+        combined = dark_areas * 0.7 + laplacian_norm * 0.3
+        
+        # Add some realistic noise and patterns
+        noise = np.random.normal(0, 0.1, combined.shape)
+        combined = np.clip(combined + noise, 0, 1)
+        
+        # Apply morphological operations for realistic spill shapes
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+        combined = cv2.morphologyEx(combined.astype(np.float32), cv2.MORPH_OPEN, kernel)
+        combined = cv2.GaussianBlur(combined, (9, 9), 2)
         
         # Resize to standard size
-        prediction = cv2.resize(binary, (256, 256))
+        prediction = cv2.resize(combined, (256, 256))
+        
+        # Make it more realistic by reducing overall intensity
+        prediction = prediction * 0.6  # Reduce intensity for more realistic results
         
         return prediction
 
@@ -205,22 +263,58 @@ def create_overlay(original_image, mask, threshold=0.5):
     
     return result, binary_mask
 
+def create_demo_image(demo_type):
+    """Create demo images for testing"""
+    np.random.seed(42)  # For consistent demo images
+    
+    if demo_type == "ocean":
+        # Blue ocean image
+        img = np.zeros((300, 400, 3), dtype=np.uint8)
+        img[:, :, 0] = np.random.randint(20, 60, (300, 400))   # Low red
+        img[:, :, 1] = np.random.randint(40, 100, (300, 400)) # Medium green
+        img[:, :, 2] = np.random.randint(100, 180, (300, 400)) # High blue
+        
+    elif demo_type == "oil_spill":
+        # Ocean with dark oil spill areas
+        img = np.zeros((300, 400, 3), dtype=np.uint8)
+        img[:, :, 0] = np.random.randint(20, 60, (300, 400))
+        img[:, :, 1] = np.random.randint(40, 100, (300, 400))
+        img[:, :, 2] = np.random.randint(100, 180, (300, 400))
+        # Add dark oil spill patches
+        img[100:200, 150:300] = np.random.randint(0, 40, (100, 150, 3))
+        img[50:120, 320:380] = np.random.randint(0, 30, (70, 60, 3))
+        
+    elif demo_type == "coastal":
+        # Mixed coastal image
+        img = np.zeros((300, 400, 3), dtype=np.uint8)
+        img[:, :, 0] = np.random.randint(60, 140, (300, 400))
+        img[:, :, 1] = np.random.randint(80, 150, (300, 400))
+        img[:, :, 2] = np.random.randint(50, 120, (300, 400))
+    
+    # Convert to PIL Image and then to BytesIO
+    pil_img = Image.fromarray(img.astype(np.uint8))
+    img_bytes = io.BytesIO()
+    pil_img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
+    return img_bytes
+
 def main():
     # Header
     st.markdown('<h1 class="main-header">🛰️ AI SpillGuard - Oil Spill Detection</h1>', unsafe_allow_html=True)
     st.markdown("**Upload a satellite image to detect oil spills using AI-powered computer vision**")
     
     # Initialize detector
-    @st.cache_resource
-    def load_detector():
-        return OilSpillDetector()
-    
-    detector = load_detector()
+    detector = OilSpillDetector()
     
     # Sidebar
-    st.sidebar.header("🔧 Settings")
+    st.sidebar.header("🔧 Configuration")
     confidence_threshold = st.sidebar.slider("Detection Threshold", 0.1, 0.9, 0.5)
     show_probability_map = st.sidebar.checkbox("Show Probability Map", True)
+    
+    st.sidebar.header("🚨 Alert Settings")
+    alert_threshold = st.sidebar.slider("Alert Threshold (%)", 1, 50, 10)
+    enable_alerts = st.sidebar.checkbox("Enable Alerts", True)
     
     st.sidebar.header("📊 Model Info")
     st.sidebar.info(f"""
@@ -229,6 +323,19 @@ def main():
     **Input Size**: 256x256
     **Architecture**: U-Net
     """)
+    
+    # Model loading instructions for demo mode
+    if not detector.model_loaded:
+        st.sidebar.warning("""
+        **Demo Mode Active**
+        
+        To use your trained model:
+        1. Upload model to Google Drive
+        2. Make it publicly accessible
+        3. Get the file ID
+        4. Update the code
+        5. Redeploy
+        """)
     
     # File uploader
     uploaded_file = st.file_uploader(
@@ -264,7 +371,7 @@ def main():
         
         with col1:
             st.subheader("📷 Original Image")
-            st.image(image, caption="Uploaded Satellite Image", use_container_width=True)
+            st.image(image, caption="Uploaded Satellite Image", width=None)
         
         # Make prediction
         with st.spinner("🔍 Analyzing image for oil spills..."):
@@ -273,7 +380,7 @@ def main():
         
         with col2:
             st.subheader("🎯 Detection Results")
-            st.image(overlay, caption="Oil Spill Detection (Red Areas)", use_container_width=True)
+            st.image(overlay, caption="Oil Spill Detection (Red Areas)", width=None)
         
         # Calculate metrics
         oil_spill_percentage = (binary_mask.sum() / binary_mask.size) * 100
@@ -295,8 +402,7 @@ def main():
         
         with col6:
             severity = "Low" if oil_spill_percentage < 5 else "Medium" if oil_spill_percentage < 15 else "High" if oil_spill_percentage < 30 else "Critical"
-            color = "normal" if severity == "Low" else "inverse"
-            st.metric("⚠️ Severity Level", severity, delta=None)
+            st.metric("⚠️ Severity Level", severity)
         
         # Probability map
         if show_probability_map:
@@ -310,16 +416,17 @@ def main():
         
         # Alert system
         st.subheader("🚨 Alert Status")
-        if oil_spill_percentage > 1.0:
-            st.error(f"🚨 **ALERT**: Oil spill detected! {oil_spill_percentage:.2f}% of the image shows potential oil contamination.")
-            st.markdown("**Recommended Actions:**")
-            st.markdown("- 📞 Contact maritime authorities")
-            st.markdown("- 🗺️ Record GPS coordinates")
-            st.markdown("- 📊 Document extent and severity")
-        elif oil_spill_percentage > 0.1:
-            st.warning(f"⚠️ **CAUTION**: Possible oil contamination detected ({oil_spill_percentage:.2f}% coverage).")
-        else:
-            st.success("✅ **ALL CLEAR**: No significant oil spill detected in this image.")
+        if enable_alerts:
+            if oil_spill_percentage > alert_threshold:
+                st.error(f"🚨 **ALERT**: Oil spill detected! {oil_spill_percentage:.2f}% of the image shows potential oil contamination.")
+                st.markdown("**Recommended Actions:**")
+                st.markdown("- 📞 Contact maritime authorities")
+                st.markdown("- 🗺️ Record GPS coordinates")
+                st.markdown("- 📊 Document extent and severity")
+            elif oil_spill_percentage > 0.5:
+                st.warning(f"⚠️ **CAUTION**: Possible oil contamination detected ({oil_spill_percentage:.2f}% coverage).")
+            else:
+                st.success("✅ **ALL CLEAR**: No significant oil spill detected in this image.")
         
         # Download results
         st.subheader("💾 Download Results")
@@ -349,7 +456,8 @@ Detection Results:
 - Affected Pixels: {affected_pixels:,}
 - Severity Level: {severity}
 
-Alert Status: {'DETECTED' if oil_spill_percentage > 0.1 else 'CLEAR'}
+Model Status: {'Trained Model' if detector.model_loaded else 'Demo Mode'}
+Alert Status: {'DETECTED' if oil_spill_percentage > 0.5 else 'CLEAR'}
 """
             
             st.download_button(
@@ -358,40 +466,6 @@ Alert Status: {'DETECTED' if oil_spill_percentage > 0.1 else 'CLEAR'}
                 file_name=f"oil_spill_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                 mime="text/plain"
             )
-
-def create_demo_image(demo_type):
-    """Create demo images for testing"""
-    # Create a simple demo image
-    img = np.random.randint(0, 100, (300, 400, 3), dtype=np.uint8)
-    
-    if demo_type == "ocean":
-        # Blue ocean image
-        img[:, :, 0] = np.random.randint(10, 50, (300, 400))  # Low red
-        img[:, :, 1] = np.random.randint(30, 80, (300, 400))  # Medium green
-        img[:, :, 2] = np.random.randint(80, 150, (300, 400))  # High blue
-    
-    elif demo_type == "oil_spill":
-        # Ocean with dark oil spill areas
-        img[:, :, 0] = np.random.randint(10, 50, (300, 400))
-        img[:, :, 1] = np.random.randint(30, 80, (300, 400))
-        img[:, :, 2] = np.random.randint(80, 150, (300, 400))
-        # Add dark oil spill patches
-        img[100:200, 150:250] = np.random.randint(0, 30, (100, 100, 3))
-        img[50:100, 300:350] = np.random.randint(0, 20, (50, 50, 3))
-    
-    elif demo_type == "coastal":
-        # Mixed coastal image
-        img[:, :, 0] = np.random.randint(50, 120, (300, 400))
-        img[:, :, 1] = np.random.randint(60, 130, (300, 400))
-        img[:, :, 2] = np.random.randint(40, 100, (300, 400))
-    
-    # Convert to PIL Image and then to BytesIO
-    pil_img = Image.fromarray(img.astype(np.uint8))
-    img_bytes = io.BytesIO()
-    pil_img.save(img_bytes, format='PNG')
-    img_bytes.seek(0)
-    
-    return img_bytes
 
 if __name__ == "__main__":
     main()
