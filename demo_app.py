@@ -371,7 +371,7 @@ def main():
         
         with col1:
             st.subheader("📷 Original Image")
-            st.image(image, caption="Uploaded Satellite Image", width=None)
+            st.image(image, caption="Uploaded Satellite Image", use_container_width=True)
         
         # Make prediction
         with st.spinner("🔍 Analyzing image for oil spills..."):
@@ -380,7 +380,7 @@ def main():
         
         with col2:
             st.subheader("🎯 Detection Results")
-            st.image(overlay, caption="Oil Spill Detection (Red Areas)", width=None)
+            st.image(overlay, caption="Oil Spill Detection (Red Areas)", use_container_width=True)
         
         # Calculate metrics
         oil_spill_percentage = (binary_mask.sum() / binary_mask.size) * 100
