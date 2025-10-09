@@ -33,9 +33,9 @@ Thumbs.db
 *.zip
 *.tar.gz
 
-# Large model files (too big for GitHub)
-models/*.pth
-models/*.pkl
+# Large model files are now handled by Git LFS
+# models/*.pth  # Commented out - now using Git LFS
+# models/*.pkl  # Commented out - now using Git LFS
 
 # Keep other model files
 !models/training_curves.png
