@@ -304,15 +304,26 @@ def main():
         help="Upload a satellite image for oil spill detection"
     )
     
-    if uploaded_file is not None:
+    # Check for sample image in session state
+    sample_image_path = st.session_state.get('uploaded_file', None)
+    
+    if uploaded_file is not None or sample_image_path is not None:
         # Display original image
-        image = Image.open(uploaded_file)
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
+            image_source = "Uploaded Image"
+        else:
+            image = Image.open(sample_image_path)
+            image_source = f"Sample Image: {Path(sample_image_path).name}"
+            # Clear the session state after using the sample
+            if 'uploaded_file' in st.session_state:
+                del st.session_state.uploaded_file
         
         col1, col2 = st.columns(2)
         
         with col1:
             st.subheader("📸 Original Image")
-            st.image(image, caption="Uploaded Satellite Image", use_column_width=True)
+            st.image(image, caption=image_source, use_container_width=True)
         
         # Preprocess and run inference
         with st.spinner("🔄 Processing image..."):
@@ -419,9 +430,9 @@ def main():
         
         col3, col4 = st.columns(2)
         with col3:
-            st.image(image_resized, caption="Original", use_column_width=True)
+            st.image(image_resized, caption="Original", use_container_width=True)
         with col4:
-            st.image(overlay_image, caption="Oil Spill Overlay (Red Areas)", use_column_width=True)
+            st.image(overlay_image, caption="Oil Spill Overlay (Red Areas)", use_container_width=True)
         
         # Interactive plot with Plotly
         st.subheader("📈 Interactive Analysis")
@@ -486,11 +497,13 @@ def main():
         for i, (col, img_path) in enumerate(zip(sample_cols, sample_images)):
             with col:
                 sample_img = Image.open(img_path)
-                st.image(sample_img, caption=f"Sample {i+1}", use_column_width=True)
+                st.image(sample_img, caption=f"Sample {i+1}", use_container_width=True)
                 
-                # Create a temporary uploaded file object
+                # Use sample image for detection
                 if st.button(f"Use Sample {i+1}", key=f"sample_{i}"):
-                    st.experimental_rerun()
+                    # Store the selected sample image in session state
+                    st.session_state.uploaded_file = img_path
+                    st.rerun()
     
     # Footer
     st.markdown("---")
