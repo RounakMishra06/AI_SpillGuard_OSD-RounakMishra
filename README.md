@@ -2,7 +2,7 @@
 
 **Project by:** Rounak Mishra  
 **Repository:** [AI_SpillGuard_OSD-RounakMishra](https://github.com/RounakMishra06/AI_SpillGuard_OSD-RounakMishra)  
-**Status:** ✅ **Week 1-4 Complete**
+**Status:** ✅ **Complete**
 
 ## 🎯 Project Overview
 
