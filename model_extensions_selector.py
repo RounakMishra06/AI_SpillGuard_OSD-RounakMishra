@@ -463,14 +463,14 @@ uploaded_file = st.file_uploader("Upload satellite image", type=['jpg', 'png', '
 
 if uploaded_file:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Input Image", use_container_width=True)
+    st.image(image, caption="Input Image", width='stretch')
     
     if st.button("🔍 Detect Oil Spills (Enhanced)"):
         with st.spinner("Processing with enhanced model..."):
             prediction = predict_enhanced(image, model)
             
         st.image(prediction, caption="Enhanced Detection Result", 
-                use_container_width=True, cmap='hot')
+                width='stretch', cmap='hot')
         
         # Additional metrics for enhanced models
         spill_area = np.sum(prediction > 0.5)
@@ -521,7 +521,7 @@ uploaded_file = st.file_uploader("Upload satellite image", type=['jpg', 'png', '
 
 if uploaded_file:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Input Image", use_container_width=True)
+    st.image(image, caption="Input Image", width='stretch')
     
     if st.button("🔍 Assess Spill Severity"):
         with st.spinner("Analyzing severity..."):
@@ -540,7 +540,7 @@ if uploaded_file:
         
         with col1:
             st.image(segmentation, caption="Spill Detection", 
-                    use_container_width=True, cmap='hot')
+                    width='stretch', cmap='hot')
         
         with col2:
             st.subheader("Severity Assessment")

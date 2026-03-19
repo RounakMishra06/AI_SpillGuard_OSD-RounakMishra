@@ -323,7 +323,7 @@ def main():
         
         with col1:
             st.subheader("📸 Original Image")
-            st.image(image, caption=image_source, use_container_width=True)
+            st.image(image, caption=image_source, width='stretch')
         
         # Preprocess and run inference
         with st.spinner("🔄 Processing image..."):
@@ -430,9 +430,9 @@ def main():
         
         col3, col4 = st.columns(2)
         with col3:
-            st.image(image_resized, caption="Original", use_container_width=True)
+            st.image(image_resized, caption="Original", width='stretch')
         with col4:
-            st.image(overlay_image, caption="Oil Spill Overlay (Red Areas)", use_container_width=True)
+            st.image(overlay_image, caption="Oil Spill Overlay (Red Areas)", width='stretch')
         
         # Interactive plot with Plotly
         st.subheader("📈 Interactive Analysis")
@@ -444,7 +444,7 @@ def main():
             title="Oil Spill Probability Heatmap"
         )
         fig_heatmap.update_layout(coloraxis_colorbar=dict(title="Probability"))
-        st.plotly_chart(fig_heatmap, use_container_width=True)
+        st.plotly_chart(fig_heatmap, width='stretch')
         
         # Save results option
         st.subheader("💾 Save Results")
@@ -497,7 +497,7 @@ def main():
         for i, (col, img_path) in enumerate(zip(sample_cols, sample_images)):
             with col:
                 sample_img = Image.open(img_path)
-                st.image(sample_img, caption=f"Sample {i+1}", use_container_width=True)
+                st.image(sample_img, caption=f"Sample {i+1}", width='stretch')
                 
                 # Use sample image for detection
                 if st.button(f"Use Sample {i+1}", key=f"sample_{i}"):

@@ -37,6 +37,16 @@ Thumbs.db
 models/*.pth
 models/*.pkl
 
+# Additional project-specific and common ignores
+requirements_exact.txt
+.streamlit/
+outputs/
+models/*.pt
+models/*.ckpt
+*.nbconvert.ipynb
+AI_SpillGuard_HF_Deployment.zip
+.python-version
+
 # Note: Model files are available locally and can be hosted via:
 # - Google Drive (see GOOGLE_DRIVE_MODEL_SETUP.md)
 # - Private repository with Git LFS
